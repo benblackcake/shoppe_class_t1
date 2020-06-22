@@ -9,7 +9,7 @@ from datetime import timedelta
 import argparse
 import os
 
-def print_progress(epoch, feed_dict_train, feed_dict_validate, val_loss):
+def print_progress(sess,epoch, feed_dict_train, feed_dict_validate, val_loss):
     # Calculate the accuracy on the training-set.
     acc = session.run(accuracy, feed_dict=feed_dict_train)
     val_acc = session.run(accuracy, feed_dict=feed_dict_validate)
@@ -141,7 +141,7 @@ def main():
                 val_loss = session.run(cost, feed_dict=feed_dict_validate)
                 epoch = int(i / int(data.train.num_examples/batch_size))
                 
-                print_progress(epoch, feed_dict_train, feed_dict_validate, val_loss)
+                print_progress(sess, epoch, feed_dict_train, feed_dict_validate, val_loss)
 
 if __name__ == "__main__":
     main()
