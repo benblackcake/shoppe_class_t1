@@ -123,25 +123,27 @@ def main():
         print(data.train.num_examples)
 
         for i in range(epochs):
-            x_batch, y_true_batch, _, cls_batch = data.train.next_batch(train_batch_size)
-            x_valid_batch, y_valid_batch, _, valid_cls_batch = data.valid.next_batch(train_batch_size)
 
-            x_batch = x_batch.reshape(train_batch_size, img_size_flat)
-            x_valid_batch = x_valid_batch.reshape(train_batch_size, img_size_flat)
+            for idx in range(0,len(data.train.num_examples//batch_size))
+                x_batch, y_true_batch, _, cls_batch = data.train.next_batch(train_batch_size)
+                x_valid_batch, y_valid_batch, _, valid_cls_batch = data.valid.next_batch(train_batch_size)
 
-            feed_dict_train = {x: x_batch,
-                               y_true: y_true_batch}
-            
-            feed_dict_validate = {x: x_valid_batch,
-                                  y_true: y_valid_batch}
+                x_batch = x_batch.reshape(train_batch_size, img_size_flat)
+                x_valid_batch = x_valid_batch.reshape(train_batch_size, img_size_flat)
 
-            sess.run(optimizer, feed_dict=feed_dict_train) 
-                    # Print status at end of each epoch
-            if i % int(data.train.num_examples/batch_size) == 0: 
-                val_loss = sess.run(cloth_predict_loss, feed_dict=feed_dict_validate)
-                epoch = int(i / int(data.train.num_examples/batch_size))
+                feed_dict_train = {x: x_batch,
+                                   y_true: y_true_batch}
                 
-                print_progress(sess, accuracy, epoch, feed_dict_train, feed_dict_validate, val_loss)
+                feed_dict_validate = {x: x_valid_batch,
+                                      y_true: y_valid_batch}
+
+                sess.run(optimizer, feed_dict=feed_dict_train) 
+                        # Print status at end of each epoch
+                if i % int(data.train.num_examples/batch_size) == 0: 
+                    val_loss = sess.run(cloth_predict_loss, feed_dict=feed_dict_validate)
+                    epoch = int(i / int(data.train.num_examples/batch_size))
+                    
+                    print_progress(sess, accuracy, epoch, feed_dict_train, feed_dict_validate, val_loss)
 
 if __name__ == "__main__":
     main()
