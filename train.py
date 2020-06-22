@@ -9,7 +9,7 @@ from datetime import timedelta
 import argparse
 import os
 
-def print_progress(sess,epoch, feed_dict_train, feed_dict_validate, val_loss):
+def print_progress(sess, accuracy, epoch, feed_dict_train, feed_dict_validate, val_loss):
     # Calculate the accuracy on the training-set.
     acc = sess.run(accuracy, feed_dict=feed_dict_train)
     val_acc = session.run(accuracy, feed_dict=feed_dict_validate)
@@ -138,10 +138,10 @@ def main():
             sess.run(optimizer, feed_dict=feed_dict_train) 
                     # Print status at end of each epoch
             if i % int(data.train.num_examples/batch_size) == 0: 
-                val_loss = sess.run(cost, feed_dict=feed_dict_validate)
+                val_loss = sess.run(cloth_predict_loss, feed_dict=feed_dict_validate)
                 epoch = int(i / int(data.train.num_examples/batch_size))
                 
-                print_progress(sess, epoch, feed_dict_train, feed_dict_validate, val_loss)
+                print_progress(sess, accuracy, epoch, feed_dict_train, feed_dict_validate, val_loss)
 
 if __name__ == "__main__":
     main()
