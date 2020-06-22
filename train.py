@@ -120,6 +120,7 @@ def main():
         # Helper functions for optimization iteractions
         train_batch_size = batch_size
         start_time = time.time()
+        print(data.train.num_examples)
 
         for i in range(epochs):
             x_batch, y_true_batch, _, cls_batch = data.train.next_batch(train_batch_size)
@@ -134,8 +135,7 @@ def main():
             feed_dict_validate = {x: x_valid_batch,
                                   y_true: y_valid_batch}
 
-            session.run(optimizer, feed_dict=feed_dict_train) 
-
+            sess.run(optimizer, feed_dict=feed_dict_train) 
                     # Print status at end of each epoch
             if i % int(data.train.num_examples/batch_size) == 0: 
                 val_loss = session.run(cost, feed_dict=feed_dict_validate)
