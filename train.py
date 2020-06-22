@@ -124,7 +124,7 @@ def main():
 
         for i in range(epochs):
 
-            for idx in range(0,len(data.train.num_examples//batch_size))
+            for idx in range(0,len(data.train.num_examples//batch_size)):
                 x_batch, y_true_batch, _, cls_batch = data.train.next_batch(train_batch_size)
                 x_valid_batch, y_valid_batch, _, valid_cls_batch = data.valid.next_batch(train_batch_size)
 
