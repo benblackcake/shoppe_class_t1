@@ -138,7 +138,7 @@ def main():
             sess.run(optimizer, feed_dict=feed_dict_train) 
                     # Print status at end of each epoch
             if i % int(data.train.num_examples/batch_size) == 0: 
-                val_loss = session.run(cost, feed_dict=feed_dict_validate)
+                val_loss = sess.run(cost, feed_dict=feed_dict_validate)
                 epoch = int(i / int(data.train.num_examples/batch_size))
                 
                 print_progress(sess, epoch, feed_dict_train, feed_dict_validate, val_loss)
