@@ -12,7 +12,7 @@ import os
 def print_progress(sess, accuracy, epoch, feed_dict_train, feed_dict_validate, val_loss):
     # Calculate the accuracy on the training-set.
     acc = sess.run(accuracy, feed_dict=feed_dict_train)
-    val_acc = session.run(accuracy, feed_dict=feed_dict_validate)
+    val_acc = sess.run(accuracy, feed_dict=feed_dict_validate)
     msg = "Epoch {0} --- Training Accuracy: {1:>6.1%}, Validation Accuracy: {2:>6.1%}, Validation Loss: {3:.3f}"
     print(msg.format(epoch + 1, acc, val_acc, val_loss))
 
