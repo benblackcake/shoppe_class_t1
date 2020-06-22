@@ -83,7 +83,7 @@ def main():
     validation_size = .16
     early_stopping = None  # use None if you don't want to implement early stoping
 
-    epoch = 1000
+    epochs = 1000
     train_path = 'done_dataset/train/'
     test_path = 'done_dataset/test/'
     checkpoint_dir = "models/"
@@ -121,7 +121,7 @@ def main():
         train_batch_size = batch_size
         start_time = time.time()
 
-        for i in range(epoch):
+        for i in range(epochs):
             x_batch, y_true_batch, _, cls_batch = data.train.next_batch(train_batch_size)
             x_valid_batch, y_valid_batch, _, valid_cls_batch = data.valid.next_batch(train_batch_size)
 
