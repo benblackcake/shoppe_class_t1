@@ -2,20 +2,24 @@
 import tensorflow as tf
 import numpy as np
 import cv2
-from utils import DataSet,read_test_set,read_train_sets
+from utils import DataSet,read_test_set,read_train_sets,build_log_dir 
 from model import ClothPredict
 import time
 from datetime import timedelta
 import argparse
 import os
+from tqdm import tqdm,trange
+import sys
 
-def print_progress(sess, accuracy, epoch, feed_dict_train, feed_dict_validate, val_loss):
+def print_progress(sess, accuracy, iteration, feed_dict_train, feed_dict_validate, val_loss, log_path):
     # Calculate the accuracy on the training-set.
     acc = sess.run(accuracy, feed_dict=feed_dict_train)
     val_acc = sess.run(accuracy, feed_dict=feed_dict_validate)
-    msg = "Epoch {0} --- Training Accuracy: {1:>6.1%}, Validation Accuracy: {2:>6.1%}, Validation Loss: {3:.3f}"
-    print(msg.format(epoch + 1, acc, val_acc, val_loss))
+    msg = "Iteration {0} --- Training Accuracy: {1:>6.1%}, Validation Accuracy: {2:>6.1%}, Validation Loss: {3:.3f}"
+    print(msg.format(iteration, acc, val_acc, val_loss))
 
+    with open(log_path + '/loss.csv', 'a') as f:
+        f.write('%d, %.15f, %.15f, %.15f\n' % (iteration, acc, val_acc, val_loss))
 
 def main():
     parser = argparse.ArgumentParser()
@@ -83,6 +87,13 @@ def main():
     validation_size = .16
     early_stopping = None  # use None if you don't want to implement early stoping
 
+
+    # Create log folder
+    if args.load and not args.name:
+        log_path = os.path.dirname(args.load)
+    else:
+        log_path = build_log_dir(args, sys.argv)
+
     epochs = 1000
     train_path = 'done_dataset/train/'
     test_path = 'done_dataset/test/'
@@ -97,34 +108,45 @@ def main():
     x = tf.placeholder(tf.float32, shape=[None, img_size_flat], name='x')
     x_image = tf.reshape(x, [-1, img_size, img_size, num_channels])
     y_true = tf.placeholder(tf.float32, shape=[None, num_classes], name='y_true')
-    y_true_cls = tf.argmax(y_true, dimension=1) #changing
+    y_true_cls = tf.argmax(y_true, dimension=1) 
 
-
-    cloth_predict = ClothPredict(learning_rate=1e-4)
-
-    layer_fc_out = cloth_predict.forward(x_image)
     # Predicted class
+    cloth_predict = ClothPredict(learning_rate=1e-4)
+    layer_fc_out = cloth_predict.forward(x_image)
     y_pred = tf.nn.softmax(layer_fc_out)
-    y_pred_cls = tf.argmax(y_pred, dimension=1) #changing
+    y_pred_cls = tf.argmax(y_pred, dimension=1) 
 
+    #Loss
     cloth_predict_loss = cloth_predict.loss(layer_fc_out, y_true)
     optimizer = cloth_predict.optimizer(cloth_predict_loss)
 
-    # Perf measures
     correct_prediction = tf.equal(y_pred_cls, y_true_cls)
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     with tf.Session() as sess:
+        iteration = 0
 
         sess.run(tf.global_variables_initializer())
-        # Helper functions for optimization iteractions
+
         train_batch_size = batch_size
         start_time = time.time()
         print(data.train.num_examples)
 
-        for i in range(epochs):
+        saver = tf.train.Saver()
+        # Load all
+        if args.load:
+            iteration = int(args.load.split('-')[-1])
+            saver.restore(sess, args.load)
+            print(saver)
+            print("load_process_DEBUG")
 
-            for idx in range(0,len(data.train.num_examples//batch_size)):
+
+        for i in range(epochs):
+            pbar = tqdm(range(data.train.num_examples//batch_size),bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}')
+
+            for idx in pbar:
+                pbar.set_description('[Iteration: %s]'%iteration)
+
                 x_batch, y_true_batch, _, cls_batch = data.train.next_batch(train_batch_size)
                 x_valid_batch, y_valid_batch, _, valid_cls_batch = data.valid.next_batch(train_batch_size)
 
@@ -138,12 +160,15 @@ def main():
                                       y_true: y_valid_batch}
 
                 sess.run(optimizer, feed_dict=feed_dict_train) 
-                        # Print status at end of each epoch
-                if i % int(data.train.num_examples/batch_size) == 0: 
+
+                if iteration % 1000 == 0: 
                     val_loss = sess.run(cloth_predict_loss, feed_dict=feed_dict_validate)
-                    epoch = int(i / int(data.train.num_examples/batch_size))
-                    
-                    print_progress(sess, accuracy, epoch, feed_dict_train, feed_dict_validate, val_loss)
+                    print_progress(sess, accuracy, iteration, feed_dict_train, feed_dict_validate, val_loss, log_path)
+
+                    saver.save(sess, os.path.join(log_path, 'weights'), global_step=iteration, write_meta_graph=False)
+
+                iteration += 1
+
 
 if __name__ == "__main__":
     main()

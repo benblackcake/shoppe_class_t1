@@ -3,6 +3,27 @@ import glob
 import numpy as np
 import cv2
 from sklearn.utils import shuffle
+import datetime
+
+def build_log_dir(args, arguments):
+    """Set up a timestamped directory for results and logs for this training session"""
+    if args.name:
+        log_path = args.name  # (name + '_') if name else ''
+    else:
+        log_path = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    log_path = os.path.join('results', log_path)
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
+    print('Logging results for this session in folder "%s".' % log_path)
+    # Output csv header
+    with open(log_path + '/loss.csv', 'a') as f:
+        f.write(
+            'iteration, Training Acc, Validation Acc, Validation Loss\n')
+
+    # Write command line arguments to file
+    with open(log_path + '/args.txt', 'w+') as f:
+        f.write(' '.join(arguments))
+    return log_path
 
 
 def load_train(train_path, image_size, classes):
@@ -17,14 +38,18 @@ def load_train(train_path, image_size, classes):
         print('Loading {} files (Index: {})'.format(fld, index))
         path = os.path.join(train_path, fld, '*g')
         files = glob.glob(path)
+        # print(files)
+
         for fl in files:
             image = cv2.imread(fl)
             image = cv2.resize(image, (image_size, image_size), cv2.INTER_LINEAR)
             images.append(image)
             label = np.zeros(len(classes))
+            print(len(classes))
             label[index] = 1.0
             labels.append(label)
             flbase = os.path.basename(fl)
+            print(flbase)
             ids.append(flbase)
             cls.append(fld)
     images = np.array(images)
@@ -148,6 +173,7 @@ def read_train_sets(train_path, image_size, classes, validation_size=0):
     train_ids = ids[validation_size:]
     train_cls = cls[validation_size:]
 
+    print(train_images.shape)
     data_sets.train = DataSet(train_images, train_labels, train_ids, train_cls)
     data_sets.valid = DataSet(validation_images, validation_labels, validation_ids, validation_cls)
 
