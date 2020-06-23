@@ -10,6 +10,7 @@ import argparse
 import os
 from tqdm import tqdm,trange
 import sys
+import glob
 
 def print_progress(sess, accuracy, iteration, feed_dict_train, feed_dict_validate, val_loss, log_path):
     # Calculate the accuracy on the training-set.
@@ -20,7 +21,28 @@ def print_progress(sess, accuracy, iteration, feed_dict_train, feed_dict_validat
 
     with open(log_path + '/loss.csv', 'a') as f:
         f.write('%d, %.15f, %.15f, %.15f\n' % (iteration, acc, val_acc, val_loss))
+        
+"""
+def sample_prediction(sess, y_pred_cls, test_im):
 
+    
+    x = tf.placeholder(tf.float32, shape=[None, img_size_flat], name='x')
+    y_true = tf.placeholder(tf.float32, shape=[None, num_classes], name='y_true')
+    feed_dict_test = {
+        x: test_im.reshape(1, img_size_flat),
+        y_true: np.array([['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',\
+      '10', '11', '12', '13', '14', '15', '16', '17', '18', '19',\
+      '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', \
+      '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', \
+      '40', '41']])
+        #y_true: np.array([[9,8,7,6,5,4,3,2,1,0]])
+        #y_true: np.array([[0,0,0,0,0,0,0,0,0,0]])
+        #y_true: np.array([[1,1,1,1,1,1,1,1,1,1]])
+    }
+
+    test_pred = sess.run(y_pred_cls, feed_dict=feed_dict_test)
+    return classes[test_pred[0]]
+"""
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--load', type=str, help='Checkpoint to load all weights from.')
@@ -99,8 +121,8 @@ def main():
     test_path = 'done_dataset/test/'
     checkpoint_dir = "models/"
 
-    data = read_train_sets(train_path, img_size, classes, validation_size=validation_size)
-    test_images, test_ids = read_test_set(test_path, img_size)
+    
+    #test_images, test_ids = read_test_set(test_path, img_size)
 
 
 
@@ -130,7 +152,7 @@ def main():
 
         train_batch_size = batch_size
         start_time = time.time()
-        print(data.train.num_examples)
+        
 
         saver = tf.train.Saver()
         # Load all
@@ -140,34 +162,68 @@ def main():
             print(saver)
             print("load_process_DEBUG")
 
+        if args.is_val:
+            #pred = np.empty()
+            files = sorted(glob.glob('./done_dataset/test/*.jpg'))
+            file_name = list()
+            pred_li = list()
+            pbar = tqdm(range(len(files)),bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}')
+            for i in pbar:
+                img = cv2.resize(cv2.imread(files[i]),(img_size,img_size),cv2.INTER_LINEAR)/255.
+                img = np.asarray(img)
+                file_name.append(files[i].split('\\')[-1])            
+                #print(files[i].split('\\')[-1])
+                feed_dict_test = {
+                    x: img.reshape(1, img_size_flat),
+                    y_true: np.array([['00', '01', '02', '03', '04', '05', '06', '07', '08', '09',\
+                          '10', '11', '12', '13', '14', '15', '16', '17', '18', '19',\
+                          '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', \
+                          '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', \
+                          '40', '41']])
 
-        for i in range(epochs):
-            pbar = tqdm(range(data.train.num_examples//batch_size),bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}')
-
-            for idx in pbar:
-                pbar.set_description('[Iteration: %s]'%iteration)
-
-                x_batch, y_true_batch, _, cls_batch = data.train.next_batch(train_batch_size)
-                x_valid_batch, y_valid_batch, _, valid_cls_batch = data.valid.next_batch(train_batch_size)
-
-                x_batch = x_batch.reshape(train_batch_size, img_size_flat)
-                x_valid_batch = x_valid_batch.reshape(train_batch_size, img_size_flat)
-
-                feed_dict_train = {x: x_batch,
-                                   y_true: y_true_batch}
+                }
                 
-                feed_dict_validate = {x: x_valid_batch,
-                                      y_true: y_valid_batch}
+                test_pred = sess.run(y_pred_cls, feed_dict=feed_dict_test)
+                pred_li.append(test_pred)
+                
+            np.savetxt('prediction.txt', pred_li, fmt='%s', delimiter='\n')
+            np.savetxt('file_name.txt',file_name, fmt='%s', delimiter='\n')
+            print('__DEBUG__pred result length: %s' %len(pred_li))
+            print('__DEBUG__pred result: %s' %pred_li)
 
-                sess.run(optimizer, feed_dict=feed_dict_train) 
+                
+        else:
+            data = read_train_sets(train_path, img_size, classes, validation_size=validation_size)
+            print(data.train.num_examples)
+                
+            for i in range(epochs):
+                pbar = tqdm(range(data.train.num_examples//batch_size),bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}')
 
-                if iteration % 1000 == 0: 
-                    val_loss = sess.run(cloth_predict_loss, feed_dict=feed_dict_validate)
-                    print_progress(sess, accuracy, iteration, feed_dict_train, feed_dict_validate, val_loss, log_path)
+                for idx in pbar:
+                    pbar.set_description('[Iteration: %s]'%iteration)
 
-                    saver.save(sess, os.path.join(log_path, 'weights'), global_step=iteration, write_meta_graph=False)
+                    x_batch, y_true_batch, _, cls_batch = data.train.next_batch(train_batch_size)
+                    x_valid_batch, y_valid_batch, _, valid_cls_batch = data.valid.next_batch(train_batch_size)
 
-                iteration += 1
+                    x_batch = x_batch.reshape(train_batch_size, img_size_flat)
+                    x_valid_batch = x_valid_batch.reshape(train_batch_size, img_size_flat)
+
+                    feed_dict_train = {x: x_batch,
+                                       y_true: y_true_batch}
+                    
+                    feed_dict_validate = {x: x_valid_batch,
+                                          y_true: y_valid_batch}
+
+                    sess.run(optimizer, feed_dict=feed_dict_train) 
+
+                    if iteration % 1000 == 0: 
+                        val_loss = sess.run(cloth_predict_loss, feed_dict=feed_dict_validate)
+                        print_progress(sess, accuracy, iteration, feed_dict_train, feed_dict_validate, val_loss, log_path)
+
+                        saver.save(sess, os.path.join(log_path, 'weights'), global_step=iteration, write_meta_graph=False)
+
+                    iteration += 1 
+                
 
 
 if __name__ == "__main__":

@@ -45,11 +45,11 @@ def load_train(train_path, image_size, classes):
             image = cv2.resize(image, (image_size, image_size), cv2.INTER_LINEAR)
             images.append(image)
             label = np.zeros(len(classes))
-            print(len(classes))
+            #print(len(classes))
             label[index] = 1.0
             labels.append(label)
             flbase = os.path.basename(fl)
-            print(flbase)
+            #print(flbase)
             ids.append(flbase)
             cls.append(fld)
     images = np.array(images)
